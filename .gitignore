@@ -1,0 +1,4 @@
+.vscode
+ticket_service/node_modules
+ticket_service/dist
+ticket_service/.env
