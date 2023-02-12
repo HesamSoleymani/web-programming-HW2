@@ -25,7 +25,7 @@ export const getUserInfo = (
   onError: (error: any) => void
 ) => {
   axios
-    .post(`${AuthServiceUrl}/getUserInfo`, token)
+    .get(`${AuthServiceUrl}/UserInfo`, { params: { token } })
     .then((response) => {
       onSuccess(response.data);
     })

@@ -21,7 +21,7 @@ function schemaValidator(schema: object) {
 
 ticketsRouter.get("/", schemaValidator(_schema.GetTicketsRequest), getTickets);
 
-ticketsRouter.post(
+ticketsRouter.get(
   "/transaction",
   schemaValidator(_schema.GetTransactionRequest),
   (
@@ -29,7 +29,7 @@ ticketsRouter.post(
     res: Response<GetTransactionIdResponse>
   ) => {
     getUserInfo(
-      req.cookies.get("access_token"),
+      req.cookies.access_token,
       (user) => {
         const formData = new FormData();
         formData.append("amount", req.body.amount.toString());
@@ -37,7 +37,7 @@ ticketsRouter.post(
         formData.append("callback", req.body.callback);
         getTransactionId(
           formData,
-          ({ transactionId }) => res.status(200).send({ transactionId }),
+          (response) => res.status(200).send(response),
           (error) => res.status(500).send(error)
         );
       },
@@ -52,4 +52,4 @@ ticketsRouter.post(
   submitPurchase
 );
 
-ticketsRouter.post("/user", getUserTickets);
+ticketsRouter.get("/user", getUserTickets);

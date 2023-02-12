@@ -43,7 +43,7 @@ export const submitPurchase = (
   res: Response
 ) =>
   getUserInfo(
-    req.cookies.get("access_token"),
+    req.cookies.access_token,
     (user) =>
       pool.query(
         `
@@ -57,12 +57,16 @@ export const submitPurchase = (
             INSERT INTO purchase 
             (corresponding_user_id,title,first_name,last_name,
               flight_serial,offer_price,offer_class,transaction_id,transaction_result) 
-            VALUES ('${user.id}','ticket','${user.name}','${user.lastname}',
+            VALUES ('${user.id}','ticket','${user.first_name}','${user.last_name}',
               '${results.rows[0].flight_serial}',${req.body.amount},'${req.body.flightType}',
               '${req.body.transactionId}','${req.body.transactionResult}')
             `,
             (error, results) => {
-              return error ? res.status(500).send(error) : res.status(200);
+              return error
+                ? res.status(500).send(error)
+                : res
+                    .status(200)
+                    .send("Purchase has been inserted successfully.");
             }
           );
         }
@@ -72,33 +76,36 @@ export const submitPurchase = (
 
 export const getUserTickets = (req: RequestBody, res: Response) =>
   getUserInfo(
-    req.cookies.get("access_token"),
+    req.cookies.access_token,
     (user) =>
-      pool.query(
-        `
+      pool
+        .query(
+          `
         SELECT flight_serial FROM purchase WHERE
         corresponding_user_id = '${user.id}'
-        `,
-        (error, purchases) => {
-          if (error) return res.status(500).send(error);
+        `
+        )
+        .then((purchases) => {
           let userTickets: UserTicket[] = [];
-          purchases.rows.forEach((purchase) =>
-            pool.query(
-              `
+          purchases.rows.forEach(async (purchase) => {
+            await pool
+              .query(
+                `
               SELECT flight_id FROM flight WHERE
               flight_serial = '${purchase.flight_serial}'
-              `,
-              (error, results) => {
-                if (error) return res.status(500).send(error);
-                pool.query(
-                  `
+              `
+              )
+              .then((results) => {
+                pool
+                  .query(
+                    `
                   SELECT * FROM available_offers 
                   WHERE flight_id = '${results.rows[0].flight_id}'
-                  `,
-                  (error, tickets) => {
-                    if (error) return res.status(500).send(error);
+                  `
+                  )
+                  .then(async (tickets) => {
                     const ticket = tickets.rows[0];
-                    userTickets.push({
+                    await userTickets.push({
                       id: ticket.flight_id,
                       origin: ticket.origin,
                       destination: ticket.destination,
@@ -107,13 +114,14 @@ export const getUserTickets = (req: RequestBody, res: Response) =>
                       duration: ticket.duration,
                       flightType: purchase.offer_class,
                     });
-                  }
-                );
-              }
-            )
-          );
+                  })
+                  .catch((error) => res.status(500).send(error));
+              })
+              .catch((error) => res.status(500).send(error));
+            console.log(userTickets);
+          });
           res.status(200).send(userTickets);
-        }
-      ),
+        })
+        .catch((error) => res.status(500).send(error)),
     (error) => res.status(500).send(error)
   );

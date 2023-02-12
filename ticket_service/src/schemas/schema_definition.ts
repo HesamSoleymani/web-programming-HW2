@@ -22,6 +22,6 @@ export interface SubmitPurchaseRequest {
 
 export interface GetUserInfoResponse {
   id: string;
-  name: string;
-  lastname: string;
+  first_name: string;
+  last_name: string;
 }
